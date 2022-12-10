@@ -306,7 +306,7 @@
                     .attr("fill", `${d3.select(m.srcElement).attr("fill")}`)
                     .attr("text-anchor", "end")
                     .attr("stroke", "black")
-                    .text("Number of Crimes")
+                    .text("Number of Crimes ")
 
                     day_chart.remove()
                     by_day_com = d3.group(com_data, d => days_of_week[d.date.getDay()])
