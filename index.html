@@ -22,7 +22,7 @@
             line-height: 1;
         }
         
-        #info {
+        #info{
             position: absolute;
             top: 20vh;
             left: 50vw;
@@ -33,6 +33,12 @@
             font-size: medium;
             border-radius: 2px;
             line-height: 1;
+        }
+
+        #day_chart {
+            position: absolute;
+            top: 20vh;
+            left: 50vw;
         }
 
         #info-title {
@@ -79,7 +85,7 @@
             margin-top: 10px;
         }
 
-
+        
 
 
     </style>
@@ -94,11 +100,23 @@
     </div>
     <div id="info-title"></div>
     <div id="info"></div>
+    <div id="day_chart" style="visibility: hidden;"></div>
     <div id="container">...Loading</div>
     <button id="but1" type="button">Year</button>
     <button id="but2" type="button">Day</button>
-
+    <script src="./src/circularHeatChart.js"></script>
     <script>
+
+        const button1 = d3.select("#but1").on("click", () => {
+            d3.select("#info").style("visibility", "visible")
+            d3.select("#day_chart").style("visibility", "hidden")
+        })
+
+        const button2 = d3.select("#but2").on("click", () => {
+            d3.select("#info").style("visibility", "hidden")
+            d3.select("#day_chart").style("visibility", "visible")
+        })
+
         const window_dims = {
             width: window.innerWidth/2,
             height: window.innerHeight/2
@@ -117,31 +135,63 @@
 
         Promise.all([
             d3.json(crime_data_path(2017)), 
-            d3.json(crime_data_path(2018)),
-            d3.json(crime_data_path(2019)),
-            d3.json(crime_data_path(2020)),
-            d3.json(crime_data_path(2021)),
-            d3.json(crime_data_path(2022)),
+            // d3.json(crime_data_path(2018)),
+            // d3.json(crime_data_path(2019)),
+            // d3.json(crime_data_path(2020)),
+            // d3.json(crime_data_path(2021)),
+            // d3.json(crime_data_path(2022)),
             d3.json(geo_data)
         ]).then(data => {
 
 
             const crimes_2017 = data[0];
-            const crimes_2018 = data[1];
-            const crimes_2019 = data[2];
-            const crimes_2020 = data[3];
-            const crimes_2021 = data[4];
-            const crimes_2022 = data[5];
+            // const crimes_2018 = data[1];
+            // const crimes_2019 = data[2];
+            // const crimes_2020 = data[3];
+            // const crimes_2021 = data[4];
+            // const crimes_2022 = data[5];
 
             const crime_data = d3.map(
-                [...crimes_2017, ...crimes_2018, ...crimes_2019, ...crimes_2020, ...crimes_2021, ...crimes_2022]
+                [...crimes_2017]//, ...crimes_2018, ...crimes_2019, ...crimes_2020, ...crimes_2021, ...crimes_2022]
                 , formatter
             );
 
+            const days_of_week = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
             const by_community_area = d3.group(crime_data, d => d.community_area)
             const by_year = d3.group(crime_data, d => d.year)
+            const by_day = d3.group(crime_data, d => days_of_week[d.date.getDay()])
+            const hourly = d3.map(days_of_week, (day) => {
+                data_for_day = by_day.get(day)
+                by_hour = d3.group(data_for_day, d => d.date.getHours()+1)
+                hours = d3.range(1,25)
+                return d3.map(hours, hour => by_hour.get(hour).length)
+            })
 
-            const geojson = data[6];
+            
+
+            const geojson = data[1];
+
+            var chart = circularHeatChart()
+                .segmentHeight(7)
+                .numSegments(7)
+                .innerRadius(30)
+                .segmentLabels(days_of_week)
+            
+            var data = [];
+            for(var i=0; i<7; i++)
+                for(var j = 0; j < 24; j++)
+                    data[j * 7 + i] = hourly[i][j];
+
+            let day_chart = d3.select('#day_chart')
+                .selectAll('svg')
+                .data([data])
+                .enter()
+                .append('svg')
+                .attr("viewbox", `0 0 ${window_dims.width} ${window_dims.height}`)
+                .attr("width", "55vw")
+                .attr("height", "75vh")
+                .call(chart);
 
             const geoPath_generator = d3.geoPath()
                 .projection(d3.geoMercator().fitSize([window_dims.width - margin, window_dims.height - margin], geojson))
@@ -163,9 +213,9 @@
             const info_title = d3.select("#info-title").text("overall")
 
             const matrix = [
-                [2017, 2018],
-                [2019, 2020],
-                [2021, 2022]
+                [2017, 2017],
+                [2017, 2017],
+                [2017, 2017]
             ]
 
             const tr = info.append("table")
@@ -210,7 +260,6 @@
             .data(year => {
                 year_data = by_year.get(year)
                 by_month = d3.group(year_data, d => d.date.getMonth())
-                console.log(d3.map(months, (d) => by_month.get(d)?.length))
                 return d3.map(months, (d) => ({month: d, value: by_month.get(d) ? by_month.get(d).length: 0}))
             })
             .enter()
@@ -244,7 +293,6 @@
                     .data(year => {
                         year_data = by_year_com.get(year)
                         by_month = d3.group(year_data, d => d.date.getMonth())
-                        console.log(d3.map(months, (d) => ({month: d, value: by_month.get(d) ? by_month.get(d).length: 0})))
                         return d3.map(months, (d) => ({month: d, value: by_month.get(d) ? by_month.get(d).length: 0}))
                     })
                     .enter()
@@ -256,7 +304,32 @@
                     .attr("height", d => graph_height - yScale(d.value))
                     .attr("fill", `${d3.select(m.srcElement).attr("fill")}`)
 
+                    day_chart.remove()
+                    by_day_com = d3.group(com_data, d => days_of_week[d.date.getDay()])
 
+                    hourly_com = d3.map(days_of_week, (day) => {
+                        data_for_day = by_day_com.get(day)
+                        by_hour = d3.group(data_for_day, d => d.date.getHours()+1)
+                        hours = d3.range(1,25)
+                        return d3.map(hours, hour => by_hour.get(hour) ? by_hour.get(hour).length : 0)
+                    })
+
+                    console.log(hourly_com)
+
+                    var data = [];
+                    for(var i=0; i<7; i++)
+                        for(var j = 0; j < 24; j++)
+                            data[j * 7 + i] = hourly_com[i][j];
+
+                    day_chart = d3.select('#day_chart')
+                        .selectAll('svg')
+                        .data([data])
+                        .enter()
+                        .append('svg')
+                        .attr("viewbox", `0 0 ${window_dims.width} ${window_dims.height}`)
+                        .attr("width", "55vw")
+                        .attr("height", "75vh")
+                        .call(chart);
                 })
         })
 
