@@ -35,6 +35,25 @@
             line-height: 1;
         }
 
+        #info-title {
+            top: 18vh;
+            left: 70vw;
+            position: absolute;
+            font-weight: bold;
+        }
+
+        #but1 {
+            top: 95vh;
+            left: 70vw;
+            position: absolute;
+        }
+        
+        #but2 {
+            top: 95vh;
+            left: 75vw;
+            position: absolute;
+        }
+
         path {
             stroke-width: .5px;
             stroke: black
@@ -59,21 +78,26 @@
             font-family: sans-serif;
             margin-top: 10px;
         }
-        .bar {
-            fill: steelblue;
-        }
+
+
+
 
     </style>
 </head>
 
 <body>
     <div id="tooltip"></div>
+    
     <div class="title">
         <h1>Map of Crimes in Chicago</h1>
-        <h3>Brandon Wetzel</h3>
+        <h3>Brandon Wetzel and Rajat Gedam</h3>
     </div>
+    <div id="info-title"></div>
     <div id="info"></div>
     <div id="container">...Loading</div>
+    <button id="but1" type="button">Year</button>
+    <button id="but2" type="button">Day</button>
+
     <script>
         const window_dims = {
             width: window.innerWidth/2,
@@ -136,7 +160,8 @@
                 
             
             const info = d3.select("#info")
-            
+            const info_title = d3.select("#info-title").text("overall")
+
             const matrix = [
                 [2017, 2018],
                 [2019, 2020],
@@ -171,17 +196,17 @@
             xScale.domain(d3.range(1,13))
             yScale.domain([0, 30000]) // This was a total shot in the dark idk lol
 
-            let g = graph.append("g")
+            const g = graph.append("g")
                 .attr("transform", `translate(${margin * 2}, ${margin * 2})`)
 
             g.append("g")
                 .attr("transform", `translate(0, ${graph_height})`)
                 .call(d3.axisBottom(xScale))
 
-            g.append("g")
+            const axis_left = g.append("g")
                 .call(d3.axisLeft(yScale).ticks(5))
             
-            g.selectAll(".bar")
+            let bars = g.selectAll(".bar")
             .data(year => {
                 year_data = by_year.get(year)
                 by_month = d3.group(year_data, d => d.date.getMonth())
@@ -195,6 +220,7 @@
             .attr("y", d => yScale(d.value))
             .attr("width", graph_width / 12)
             .attr("height", d => graph_height - yScale(d.value))
+            .attr("fill", "steelblue")
 
             svg.selectAll("path")
                 .data(geojson.features)
@@ -203,8 +229,34 @@
                 .attr("d", d => geoPath_generator(d))
                 .attr("fill", d => colorInterpolator ( linearScale ( by_community_area.get( +d['properties']['area_numbe'] ).length ) ))
                 .on("mousedown", (m, d) => {
-                    console.log(d)
-                    // info.html(d['properties']['community'])
+                    info_title.text(d['properties']['community'])
+                    bars.remove()
+
+                    com_area = d['properties']['area_numbe']
+                    com_data = by_community_area.get(+com_area)
+
+                    by_year_com = d3.group(com_data, d => d.year)
+
+                    yScale.domain([0, 1200])
+                    axis_left.call(d3.axisLeft(yScale).ticks(5))
+
+                    bars = g.selectAll(".bar")
+                    .data(year => {
+                        year_data = by_year_com.get(year)
+                        by_month = d3.group(year_data, d => d.date.getMonth())
+                        console.log(d3.map(months, (d) => ({month: d, value: by_month.get(d) ? by_month.get(d).length: 0})))
+                        return d3.map(months, (d) => ({month: d, value: by_month.get(d) ? by_month.get(d).length: 0}))
+                    })
+                    .enter()
+                    .append("rect")
+                    .attr("class", "bar")
+                    .attr("x", d => xScale(d.month+1))
+                    .attr("y", d => yScale(d.value))
+                    .attr("width", graph_width / 12)
+                    .attr("height", d => graph_height - yScale(d.value))
+                    .attr("fill", `${d3.select(m.srcElement).attr("fill")}`)
+
+
                 })
         })
 
