@@ -80,27 +80,47 @@
 
         const margin = window_dims.width * .05;
         
-        const crime_data = (year) => `data/${year}.json`;
+        const crime_data_path = (year) => `data/${year}.json`;
         const geo_data = "data/chicago_com_areas.geojson";
 
         Promise.all([
-            d3.json(crime_data(2017)), 
-            d3.json(crime_data(2018)),
-            d3.json(crime_data(2019)),
-            d3.json(crime_data(2020)),
-            d3.json(crime_data(2021)),
-            d3.json(crime_data(2021)),
+            d3.json(crime_data_path(2017)), 
+            d3.json(crime_data_path(2018)),
+            d3.json(crime_data_path(2019)),
+            d3.json(crime_data_path(2020)),
+            d3.json(crime_data_path(2021)),
+            d3.json(crime_data_path(2022)),
             d3.json(geo_data)
         ]).then(data => {
 
-            
+            const crimes_2017 = data[0];
+            const crimes_2018 = data[1];
+            const crimes_2019 = data[2];
+            const crimes_2020 = data[3];
+            const crimes_2021 = data[4];
+            const crimes_2022 = data[5];
+
+            const crime_data = [...crimes_2017, ...crimes_2018, ...crimes_2019, ...crimes_2020, ...crimes_2021, ...crimes_2022];
+
+            const by_community_area = d3.group(crime_data, d => d.community_area)
+
             const geojson = data[6];
-            console.log(geojson)
+            console.log(by_community_area)
+
+            console.log(d3.extent(geojson.features, d => {
+                    return by_community_area.get(d['properties']['area_numbe']).length
+                }))
+
 
             const geoPath_generator = d3.geoPath()
                 .projection(d3.geoMercator().fitSize([window_dims.width - margin, window_dims.height - margin], geojson))
 
-            // const colorInterpolator = d3.interpolateRgbBasis(["blue", "red"])
+            const colorInterpolator = d3.interpolateRgbBasis(["blue", "red"])
+
+            let linearScale = d3.scaleLinear()
+                .domain(d3.extent(geojson.features, d => {
+                    return by_community_area.get(d['properties']['area_numbe']).length
+                }))
 
             let svg = d3.select("#container").append("svg")
                 .attr("viewBox",`0 0 ${window_dims.width} ${window_dims.height}`)
@@ -112,6 +132,7 @@
                 .enter()
                 .append("path")
                 .attr("d", d => geoPath_generator(d))
+                .attr("fill", d => colorInterpolator ( linearScale ( by_community_area.get( d['properties']['area_numbe'] ).length ) ))
 
         })
 
