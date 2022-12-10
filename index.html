@@ -233,7 +233,7 @@
             .attr("width", "20vw")
             .attr("height", "20vh")
             .attr("class", "by_year")
-            
+
             const graph_width = tr.node().getBoundingClientRect().width - margin;
             const graph_height = tr.node().getBoundingClientRect().height * 2 - margin * 2;
             
@@ -297,16 +297,11 @@
                     .append("rect")
                     .attr("class", "bar")
                     .attr("x", d => xScale(d.month+1))
-                    .attr("text-anchor", "end")
-                    .attr("stroke", "black")
-                    .text("Month")
                     .attr("y", d => yScale(d.value))
                     .attr("width", graph_width / 12)
                     .attr("height", d => graph_height - yScale(d.value))
                     .attr("fill", `${d3.select(m.srcElement).attr("fill")}`)
-                    .attr("text-anchor", "end")
-                    .attr("stroke", "black")
-                    .text("Number of Crimes ")
+
 
                     day_chart.remove()
                     by_day_com = d3.group(com_data, d => days_of_week[d.date.getDay()])
