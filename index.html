@@ -135,24 +135,24 @@
 
         Promise.all([
             d3.json(crime_data_path(2017)), 
-            // d3.json(crime_data_path(2018)),
-            // d3.json(crime_data_path(2019)),
-            // d3.json(crime_data_path(2020)),
-            // d3.json(crime_data_path(2021)),
-            // d3.json(crime_data_path(2022)),
+            d3.json(crime_data_path(2018)),
+            d3.json(crime_data_path(2019)),
+            d3.json(crime_data_path(2020)),
+            d3.json(crime_data_path(2021)),
+            d3.json(crime_data_path(2022)),
             d3.json(geo_data)
         ]).then(data => {
 
 
             const crimes_2017 = data[0];
-            // const crimes_2018 = data[1];
-            // const crimes_2019 = data[2];
-            // const crimes_2020 = data[3];
-            // const crimes_2021 = data[4];
-            // const crimes_2022 = data[5];
+            const crimes_2018 = data[1];
+            const crimes_2019 = data[2];
+            const crimes_2020 = data[3];
+            const crimes_2021 = data[4];
+            const crimes_2022 = data[5];
 
             const crime_data = d3.map(
-                [...crimes_2017]//, ...crimes_2018, ...crimes_2019, ...crimes_2020, ...crimes_2021, ...crimes_2022]
+                [...crimes_2017, ...crimes_2018, ...crimes_2019, ...crimes_2020, ...crimes_2021, ...crimes_2022]
                 , formatter
             );
 
@@ -168,9 +168,7 @@
                 return d3.map(hours, hour => by_hour.get(hour).length)
             })
 
-            
-
-            const geojson = data[1];
+            const geojson = data[6];
 
             var chart = circularHeatChart()
                 .segmentHeight(7)
@@ -213,9 +211,9 @@
             const info_title = d3.select("#info-title").text("overall")
 
             const matrix = [
-                [2017, 2017],
-                [2017, 2017],
-                [2017, 2017]
+                [2017, 2018],
+                [2019, 2020],
+                [2021, 2022]
             ]
 
             const tr = info.append("table")
